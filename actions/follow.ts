@@ -15,6 +15,7 @@ export const onFollow = async (id: string) => {
 
         return followedUser
     } catch (error) {
+        console.error(error)
         throw new Error("Internal Error")
     }
 }

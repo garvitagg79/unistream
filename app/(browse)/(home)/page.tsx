@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/server";
 import { Button } from "@/components/ui/button";
 
@@ -8,22 +8,23 @@ type Data = {
   name: string;
 };
 
-type Props = {
-  data: Data[];
-};
-
-async function fetchData(): Promise<Data[]> {
-  const { data, error } = await supabase.from("models").select("*");
-  if (error) {
-    console.error(error);
-    return [];
-  }
-  return data;
-}
-
-const YourPage: React.FC<Props> = async () => {
+const YourPage: React.FC = () => {
   const [name, setName] = useState("");
-  const data = await fetchData();
+  const [data, setData] = useState<Data[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data, error } = await supabase.from("models").select("*");
+      if (error) {
+        console.error(error);
+        setData([]);
+      } else {
+        setData(data);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -39,6 +40,14 @@ const YourPage: React.FC<Props> = async () => {
     if (response.ok) {
       // Refresh data or handle success
       setName("");
+      // Fetch the updated data again
+      const { data, error } = await supabase.from("models").select("*");
+      if (error) {
+        console.error(error);
+        setData([]);
+      } else {
+        setData(data);
+      }
     } else {
       // Handle error
       console.error("Failed to upload data");
