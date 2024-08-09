@@ -1,79 +1,90 @@
 "use client";
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/server";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useSession, useUser } from "@clerk/nextjs";
+import { createClient } from "@supabase/supabase-js";
 
-type Data = {
-  id: number;
-  name: string;
-};
-
-const YourPage: React.FC = () => {
+export default function Home() {
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
-  const [data, setData] = useState<Data[]>([]);
+  const { user } = useUser();
+  const { session } = useSession();
+
+  // Create a custom supabase client that injects the Clerk Supabase token into the request headers
+  function createClerkSupabaseClient() {
+    return createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: {
+          fetch: async (url, options = {}) => {
+            const clerkToken = await session?.getToken({
+              template: "supabase",
+            });
+
+            const headers = new Headers(options?.headers);
+            headers.set("Authorization", `Bearer ${clerkToken}`);
+            headers.set("apikey", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+
+            return fetch(url, {
+              ...options,
+              headers,
+            });
+          },
+        },
+      }
+    );
+  }
+
+  const client = createClerkSupabaseClient();
 
   useEffect(() => {
-    const fetchData = async () => {
-      const { data, error } = await supabase.from("models").select("*");
-      if (error) {
-        console.error(error);
-        setData([]);
-      } else {
-        setData(data);
-      }
-    };
+    if (!user) return;
 
-    fetchData();
-  }, []);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name }),
-    });
-
-    if (response.ok) {
-      // Refresh data or handle success
-      setName("");
-      // Fetch the updated data again
-      const { data, error } = await supabase.from("models").select("*");
-      if (error) {
-        console.error(error);
-        setData([]);
-      } else {
-        setData(data);
-      }
-    } else {
-      // Handle error
-      console.error("Failed to upload data");
+    async function loadTasks() {
+      setLoading(true);
+      const { data, error } = await client.from("User").select();
+      if (!error) setTasks(data);
+      setLoading(false);
     }
-  };
+
+    loadTasks();
+  }, [user]);
+
+  async function createTask(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!client) return;
+
+    await client.from("User").insert({
+      name,
+    });
+    setName("");
+    window.location.reload();
+  }
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter name"
-          required
-        />
-        <Button type="submit">Submit</Button>
-      </form>
+      <h1>Tasks</h1>
 
-      {data.map((item) => (
-        <div key={item.id} className="text-fuchsia-200">
-          {item.name}
-        </div>
-      ))}
+      {loading && <p>Loading...</p>}
+
+      {!loading &&
+        tasks.length > 0 &&
+        tasks.map((task: any) => <p key={task.id}>{task.name}</p>)}
+
+      {!loading && tasks.length === 0 && <p>No tasks found</p>}
+
+      <form onSubmit={createTask}>
+        <input
+          autoFocus
+          type="text"
+          name="name"
+          placeholder="Enter new task"
+          onChange={(e) => setName(e.target.value)}
+          value={name}
+        />
+        <button type="submit">Add</button>
+      </form>
     </div>
   );
-};
-
-export default YourPage;
+}

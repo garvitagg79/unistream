@@ -20,9 +20,7 @@ export default function RootLayout({
       <html lang="en">
         <body>
           <header>
-            <SignedOut>
-              <SignInButton />
-            </SignedOut>
+            <SignedOut></SignedOut>
             <SignedIn>
               <UserButton />
             </SignedIn>
