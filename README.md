@@ -1,3 +1,7 @@
+This project is a full-fledged video streaming platform specifically designed for college societies to stream live events, content, and shows, similar to platforms like Jio Cinema. Built to handle high-traffic live streaming, Unishow allows multiple concurrent viewers to engage with live events in real time. The platform provides seamless video playback and features intuitive user interfaces for both viewers and administrators.
+
+By leveraging the power of Next.js, this platform ensures efficient server-side rendering, optimized performance, and excellent SEO features. With integrations like Supabase for real-time database management and MongoDB for storing user data, Unishow is built to scale and handle high concurrency.
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
